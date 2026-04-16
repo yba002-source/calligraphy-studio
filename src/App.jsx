@@ -50,11 +50,9 @@ function App() {
   const centerObjectOnCanvas = (canvas, obj) => {
     if (!canvas || !obj) return
     
-    // Get actual rendered dimensions
     const objWidth = obj.getScaledWidth()
     const objHeight = obj.getScaledHeight()
     
-    // Calculate center position using top-left origin
     obj.set({
       originX: 'left',
       originY: 'top',
@@ -62,6 +60,26 @@ function App() {
       top: (canvas.height - objHeight) / 2,
     })
     obj.setCoords()
+  }
+
+  // Helper function to fit image to canvas (cover)
+  const fitImageToCanvas = (canvas, img) => {
+    if (!canvas || !img) return
+    
+    const scaleX = canvas.width / img.width
+    const scaleY = canvas.height / img.height
+    const scale = Math.max(scaleX, scaleY)
+    
+    img.set({
+      scaleX: scale,
+      scaleY: scale,
+      originX: 'left',
+      originY: 'top',
+      left: (canvas.width - img.width * scale) / 2,
+      top: (canvas.height - img.height * scale) / 2,
+    })
+    img.setCoords()
+    canvas.renderAll()
   }
 
   // Initialize Fabric.js canvas
@@ -90,12 +108,17 @@ function App() {
     })
     
     canvas.add(textObj)
-    
-    // Center the text
     centerObjectOnCanvas(canvas, textObj)
-    
     canvas.setActiveObject(textObj)
     canvas.renderAll()
+
+    // Handle double-click on background image
+    canvas.on('mouse:dblclick', function(e) {
+      if (e.target && e.target.type === 'image' && e.target === bgImageRef.current) {
+        fitImageToCanvas(canvas, e.target)
+        canvas.sendToBack(e.target)
+      }
+    })
 
     // Enable touch gestures for mobile
     canvas.on('touch:gesture', function(e) {
@@ -153,13 +176,11 @@ function App() {
     reader.onload = (event) => {
       const canvas = fabricRef.current
       
-      // Remove existing background image if any
       if (bgImageRef.current) {
         canvas.remove(bgImageRef.current)
       }
       
       fabric.Image.fromURL(event.target.result, (img) => {
-        // Scale image to cover canvas initially
         const scaleX = canvas.width / img.width
         const scaleY = canvas.height / img.height
         const scale = Math.max(scaleX, scaleY)
@@ -173,10 +194,8 @@ function App() {
           lockUniScaling: false,
         })
         
-        // Store reference
         bgImageRef.current = img
         
-        // Add to canvas and center
         canvas.add(img)
         centerObjectOnCanvas(canvas, img)
         canvas.sendToBack(img)
@@ -184,8 +203,6 @@ function App() {
       })
     }
     reader.readAsDataURL(file)
-    
-    // Reset file input so same file can be re-selected
     e.target.value = ''
   }
 
@@ -220,7 +237,7 @@ function App() {
     }
   }
 
-  // Bring text to front (in case it goes behind image)
+  // Bring text to front
   const bringTextToFront = () => {
     const canvas = fabricRef.current
     if (!canvas) return
@@ -233,14 +250,13 @@ function App() {
     }
   }
 
-  // Center the selected object (or text if nothing selected)
+  // Center the selected object
   const centerSelection = () => {
     const canvas = fabricRef.current
     if (!canvas) return
     
     let obj = canvas.getActiveObject()
     
-    // If nothing selected, center the text
     if (!obj) {
       const objects = canvas.getObjects()
       obj = objects.find(o => o.type === 'i-text')
@@ -250,6 +266,15 @@ function App() {
       centerObjectOnCanvas(canvas, obj)
       canvas.renderAll()
     }
+  }
+
+  // Fit background image to canvas
+  const fitBgToCanvas = () => {
+    const canvas = fabricRef.current
+    if (!canvas || !bgImageRef.current) return
+    
+    fitImageToCanvas(canvas, bgImageRef.current)
+    canvas.sendToBack(bgImageRef.current)
   }
 
   return (
@@ -264,7 +289,6 @@ function App() {
       <main className="main">
         {/* Left Panel - Controls */}
         <aside className="panel left-panel">
-          {/* Text Input */}
           <section className="control-group">
             <label className="label">Your text</label>
             <textarea
@@ -276,7 +300,6 @@ function App() {
             />
           </section>
 
-          {/* Font Selection */}
           <section className="control-group">
             <label className="label">Font</label>
             <div className="font-list">
@@ -293,7 +316,6 @@ function App() {
             </div>
           </section>
 
-          {/* Text Color */}
           <section className="control-group">
             <label className="label">Text color</label>
             <div className="color-grid">
@@ -308,7 +330,6 @@ function App() {
             </div>
           </section>
 
-          {/* Font Size */}
           <section className="control-group">
             <label className="label">Size: {fontSize}px</label>
             <input
@@ -348,7 +369,6 @@ function App() {
 
         {/* Right Panel - Background */}
         <aside className="panel right-panel">
-          {/* Background Image */}
           <section className="control-group">
             <label className="label">Background image</label>
             <input
@@ -364,13 +384,15 @@ function App() {
             >
               📷 Import image
             </button>
+            <button className="clear-btn" onClick={fitBgToCanvas}>
+              Fit to canvas
+            </button>
             <button className="clear-btn" onClick={clearBgImage}>
               Clear image
             </button>
-            <p className="hint">Tap image to select, then pinch to resize</p>
+            <p className="hint">Double-tap image to fit to canvas</p>
           </section>
 
-          {/* Background Color */}
           <section className="control-group">
             <label className="label">Background color</label>
             <div className="color-grid">
