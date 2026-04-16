@@ -63,20 +63,21 @@ function App() {
     canvas.originalHeight = size.height
     canvas.scale = scale
 
-    // Add initial text
+    // Add initial text - use left origin for RTL text
     const textObj = new fabric.IText(text, {
-      left: (size.width * scale) / 2,
-      top: (size.height * scale) / 2,
       fontFamily: font,
       fontSize: fontSize * scale,
       fill: textColor,
-      originX: 'center',
-      originY: 'center',
       direction: 'rtl',
       textAlign: 'center',
     })
     
     canvas.add(textObj)
+    
+    // Use Fabric.js built-in centering
+    canvas.centerObject(textObj)
+    textObj.setCoords()
+    
     canvas.setActiveObject(textObj)
     canvas.renderAll()
 
@@ -150,10 +151,6 @@ function App() {
         img.set({
           scaleX: scale,
           scaleY: scale,
-          originX: 'center',
-          originY: 'center',
-          left: canvas.width / 2,
-          top: canvas.height / 2,
           // Make it selectable and resizable
           selectable: true,
           hasControls: true,
@@ -166,6 +163,8 @@ function App() {
         
         // Add to canvas at the back
         canvas.add(img)
+        canvas.centerObject(img)
+        img.setCoords()
         canvas.sendToBack(img)
         canvas.renderAll()
       })
@@ -234,13 +233,8 @@ function App() {
     }
     
     if (obj) {
-      // Set origin to center for proper centering
-      obj.set({
-        originX: 'center',
-        originY: 'center',
-        left: canvas.width / 2,
-        top: canvas.height / 2,
-      })
+      // Use Fabric.js built-in centering methods
+      canvas.centerObject(obj)
       obj.setCoords()
       canvas.renderAll()
     }
