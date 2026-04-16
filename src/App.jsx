@@ -46,6 +46,24 @@ function App() {
   const [canvasSize, setCanvasSize] = useState('square')
   const [bgColor, setBgColor] = useState('#ffffff')
 
+  // Helper function to center an object on canvas
+  const centerObjectOnCanvas = (canvas, obj) => {
+    if (!canvas || !obj) return
+    
+    // Get actual rendered dimensions
+    const objWidth = obj.getScaledWidth()
+    const objHeight = obj.getScaledHeight()
+    
+    // Calculate center position using top-left origin
+    obj.set({
+      originX: 'left',
+      originY: 'top',
+      left: (canvas.width - objWidth) / 2,
+      top: (canvas.height - objHeight) / 2,
+    })
+    obj.setCoords()
+  }
+
   // Initialize Fabric.js canvas
   useEffect(() => {
     const size = CANVAS_SIZES[canvasSize]
@@ -63,20 +81,18 @@ function App() {
     canvas.originalHeight = size.height
     canvas.scale = scale
 
-    // Add initial text - use left origin for RTL text
+    // Add initial text
     const textObj = new fabric.IText(text, {
       fontFamily: font,
       fontSize: fontSize * scale,
       fill: textColor,
-      direction: 'rtl',
       textAlign: 'center',
     })
     
     canvas.add(textObj)
     
-    // Use Fabric.js built-in centering
-    canvas.centerObject(textObj)
-    textObj.setCoords()
+    // Center the text
+    centerObjectOnCanvas(canvas, textObj)
     
     canvas.setActiveObject(textObj)
     canvas.renderAll()
@@ -151,7 +167,6 @@ function App() {
         img.set({
           scaleX: scale,
           scaleY: scale,
-          // Make it selectable and resizable
           selectable: true,
           hasControls: true,
           hasBorders: true,
@@ -161,10 +176,9 @@ function App() {
         // Store reference
         bgImageRef.current = img
         
-        // Add to canvas at the back
+        // Add to canvas and center
         canvas.add(img)
-        canvas.centerObject(img)
-        img.setCoords()
+        centerObjectOnCanvas(canvas, img)
         canvas.sendToBack(img)
         canvas.renderAll()
       })
@@ -233,9 +247,7 @@ function App() {
     }
     
     if (obj) {
-      // Use Fabric.js built-in centering methods
-      canvas.centerObject(obj)
-      obj.setCoords()
+      centerObjectOnCanvas(canvas, obj)
       canvas.renderAll()
     }
   }
