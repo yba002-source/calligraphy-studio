@@ -9,7 +9,6 @@ const CANVAS_SIZES = {
 }
 
 const FONTS = [
-  // Original fonts
   { name: 'Amiri', label: 'Amiri' },
   { name: 'Noto Naskh Arabic', label: 'Noto Naskh' },
   { name: 'Scheherazade New', label: 'Scheherazade' },
@@ -18,7 +17,6 @@ const FONTS = [
   { name: 'Reem Kufi', label: 'Reem Kufi' },
   { name: 'Marhey', label: 'Marhey' },
   { name: 'Tajawal', label: 'Tajawal' },
-  // New fonts
   { name: 'Cairo', label: 'Cairo' },
   { name: 'El Messiri', label: 'El Messiri' },
   { name: 'Mirza', label: 'Mirza' },
@@ -29,7 +27,6 @@ const FONTS = [
   { name: 'Noto Kufi Arabic', label: 'Noto Kufi' },
   { name: 'Almarai', label: 'Almarai' },
   { name: 'Changa', label: 'Changa' },
-  // Harakat-optimized
   { name: 'Markazi Text', label: 'Markazi' },
 ]
 
@@ -62,6 +59,7 @@ function App() {
   const fabricRef = useRef(null)
   const fileInputRef = useRef(null)
   const bgImageRef = useRef(null)
+  const bgImageDataRef = useRef(null) // Store image data URL to persist across frame changes
   const frameRef = useRef(null)
   const lastTapRef = useRef(0)
   const lastTapTargetRef = useRef(null)
@@ -93,21 +91,20 @@ function App() {
     obj.setCoords()
   }
 
-  const fitImageToCanvas = (canvas, img) => {
-    if (!canvas || !img) return
-    const scaleX = canvas.width / img.width
-    const scaleY = canvas.height / img.height
+  const fitObjectToCanvas = (canvas, obj) => {
+    if (!canvas || !obj) return
+    const scaleX = canvas.width / obj.width
+    const scaleY = canvas.height / obj.height
     const scale = Math.max(scaleX, scaleY)
-    img.set({
+    obj.set({
       scaleX: scale,
       scaleY: scale,
       originX: 'left',
       originY: 'top',
-      left: (canvas.width - img.width * scale) / 2,
-      top: (canvas.height - img.height * scale) / 2,
+      left: (canvas.width - obj.width * scale) / 2,
+      top: (canvas.height - obj.height * scale) / 2,
     })
-    img.setCoords()
-    canvas.sendToBack(img)
+    obj.setCoords()
     canvas.renderAll()
   }
 
@@ -128,7 +125,6 @@ function App() {
         return
       }
       
-      // Scale frame to exactly fill the canvas
       img.set({
         scaleX: canvas.width / img.width,
         scaleY: canvas.height / img.height,
@@ -145,7 +141,33 @@ function App() {
     }, { crossOrigin: 'anonymous' })
   }
 
-  // Main canvas setup - runs when canvasSize OR selectedFrame changes
+  const loadBgImage = (canvas, dataUrl) => {
+    if (!dataUrl) return
+    
+    fabric.Image.fromURL(dataUrl, (img) => {
+      const scaleX = canvas.width / img.width
+      const scaleY = canvas.height / img.height
+      const scale = Math.max(scaleX, scaleY)
+      img.set({
+        scaleX: scale,
+        scaleY: scale,
+        selectable: true,
+        hasControls: true,
+        hasBorders: true,
+        lockUniScaling: false,
+      })
+      bgImageRef.current = img
+      canvas.add(img)
+      centerObjectOnCanvas(canvas, img)
+      canvas.sendToBack(img)
+      if (frameRef.current) {
+        canvas.bringToFront(frameRef.current)
+      }
+      canvas.renderAll()
+    })
+  }
+
+  // Main canvas setup - only runs when canvasSize changes
   useEffect(() => {
     const size = CANVAS_SIZES[canvasSize]
     const scale = Math.min(500 / size.width, 400 / size.height)
@@ -171,17 +193,23 @@ function App() {
     canvas.add(textObj)
     centerObjectOnCanvas(canvas, textObj)
     canvas.setActiveObject(textObj)
-    canvas.renderAll()
 
-    // Load correct frame variant for this canvas size
+    // Restore background image if exists
+    if (bgImageDataRef.current) {
+      loadBgImage(canvas, bgImageDataRef.current)
+    }
+
+    // Load frame
     const framePath = getFramePath(selectedFrame, canvasSize)
     if (framePath) {
       loadFrame(canvas, framePath)
     }
 
+    canvas.renderAll()
+
     canvas.on('mouse:dblclick', function(e) {
       if (e.target && e.target.type === 'image' && e.target === bgImageRef.current) {
-        fitImageToCanvas(canvas, e.target)
+        fitObjectToCanvas(canvas, e.target)
       }
     })
 
@@ -189,7 +217,7 @@ function App() {
       const now = Date.now()
       if (now - lastTapRef.current < 300 && e.target === lastTapTargetRef.current) {
         if (e.target && e.target.type === 'image' && e.target === bgImageRef.current) {
-          fitImageToCanvas(canvas, e.target)
+          fitObjectToCanvas(canvas, e.target)
         }
       }
       lastTapRef.current = now
@@ -251,7 +279,16 @@ function App() {
       }
       canvas.dispose()
     }
-  }, [canvasSize, selectedFrame])
+  }, [canvasSize])
+
+  // Handle frame change WITHOUT recreating canvas
+  useEffect(() => {
+    const canvas = fabricRef.current
+    if (!canvas) return
+    
+    const framePath = getFramePath(selectedFrame, canvasSize)
+    loadFrame(canvas, framePath)
+  }, [selectedFrame])
 
   useEffect(() => {
     const canvas = fabricRef.current
@@ -278,27 +315,9 @@ function App() {
       if (bgImageRef.current) {
         canvas.remove(bgImageRef.current)
       }
-      fabric.Image.fromURL(event.target.result, (img) => {
-        const scaleX = canvas.width / img.width
-        const scaleY = canvas.height / img.height
-        const scale = Math.max(scaleX, scaleY)
-        img.set({
-          scaleX: scale,
-          scaleY: scale,
-          selectable: true,
-          hasControls: true,
-          hasBorders: true,
-          lockUniScaling: false,
-        })
-        bgImageRef.current = img
-        canvas.add(img)
-        centerObjectOnCanvas(canvas, img)
-        canvas.sendToBack(img)
-        if (frameRef.current) {
-          canvas.bringToFront(frameRef.current)
-        }
-        canvas.renderAll()
-      })
+      // Store the data URL for persistence
+      bgImageDataRef.current = event.target.result
+      loadBgImage(canvas, event.target.result)
     }
     reader.readAsDataURL(file)
     e.target.value = ''
@@ -324,6 +343,7 @@ function App() {
     if (canvas && bgImageRef.current) {
       canvas.remove(bgImageRef.current)
       bgImageRef.current = null
+      bgImageDataRef.current = null // Clear stored data
       canvas.renderAll()
     }
   }
@@ -354,10 +374,20 @@ function App() {
     }
   }
 
-  const fitBgToCanvas = () => {
+  // Fit selected object to canvas (works on text or background)
+  const fitSelection = () => {
     const canvas = fabricRef.current
-    if (canvas && bgImageRef.current) {
-      fitImageToCanvas(canvas, bgImageRef.current)
+    if (!canvas) return
+    
+    let obj = canvas.getActiveObject()
+    if (!obj) {
+      // Default to background image if nothing selected
+      obj = bgImageRef.current
+    }
+    
+    if (obj && obj.type === 'image') {
+      fitObjectToCanvas(canvas, obj)
+      canvas.sendToBack(obj)
       if (frameRef.current) {
         canvas.bringToFront(frameRef.current)
       }
@@ -477,7 +507,7 @@ function App() {
             >
               Import image
             </button>
-            <button className="clear-btn" onClick={fitBgToCanvas}>Fit to canvas</button>
+            <button className="clear-btn" onClick={fitSelection}>Fit to canvas</button>
             <button className="clear-btn" onClick={clearBgImage}>Clear image</button>
             <p className="hint">Double-tap image to fit. Pinch to resize.</p>
           </section>
