@@ -19,6 +19,11 @@ const FONTS = [
   { name: 'Tajawal', label: 'Tajawal' },
 ]
 
+const FRAMES = [
+  { id: 'none', label: 'No frame', file: null },
+  { id: 'frame-01', label: 'Frame 1', file: '/frames/frame-01.png' },
+]
+
 const TEXT_COLORS = ['#1a1a1a', '#ffffff', '#C9A227', '#0F6E56', '#185FA5', '#854F0B', '#712B13', '#3C3489']
 const BG_COLORS = ['transparent', '#ffffff', '#1a1a1a', '#0F6E56', '#185FA5', '#854F0B', '#FAEEDA']
 
@@ -27,6 +32,7 @@ function App() {
   const fabricRef = useRef(null)
   const fileInputRef = useRef(null)
   const bgImageRef = useRef(null)
+  const frameRef = useRef(null)
   const lastTapRef = useRef(0)
   const lastTapTargetRef = useRef(null)
   
@@ -36,6 +42,7 @@ function App() {
   const [fontSize, setFontSize] = useState(64)
   const [canvasSize, setCanvasSize] = useState('square')
   const [bgColor, setBgColor] = useState('#ffffff')
+  const [selectedFrame, setSelectedFrame] = useState('none')
 
   const centerObjectOnCanvas = (canvas, obj) => {
     if (!canvas || !obj) return
@@ -68,6 +75,38 @@ function App() {
     canvas.renderAll()
   }
 
+  const loadFrame = (canvas, frameFile) => {
+    if (frameRef.current) {
+      canvas.remove(frameRef.current)
+      frameRef.current = null
+    }
+    
+    if (!frameFile) {
+      canvas.renderAll()
+      return
+    }
+    
+    fabric.Image.fromURL(frameFile, (img) => {
+      const scaleX = canvas.width / img.width
+      const scaleY = canvas.height / img.height
+      const scale = Math.max(scaleX, scaleY)
+      
+      img.set({
+        scaleX: scale,
+        scaleY: scale,
+        left: (canvas.width - img.width * scale) / 2,
+        top: (canvas.height - img.height * scale) / 2,
+        selectable: false,
+        evented: false,
+      })
+      
+      frameRef.current = img
+      canvas.add(img)
+      canvas.bringToFront(img)
+      canvas.renderAll()
+    }, { crossOrigin: 'anonymous' })
+  }
+
   useEffect(() => {
     const size = CANVAS_SIZES[canvasSize]
     const scale = Math.min(500 / size.width, 400 / size.height)
@@ -95,14 +134,17 @@ function App() {
     canvas.setActiveObject(textObj)
     canvas.renderAll()
 
-    // Double-click (desktop)
+    const frameData = FRAMES.find(f => f.id === selectedFrame)
+    if (frameData?.file) {
+      loadFrame(canvas, frameData.file)
+    }
+
     canvas.on('mouse:dblclick', function(e) {
       if (e.target && e.target.type === 'image' && e.target === bgImageRef.current) {
         fitImageToCanvas(canvas, e.target)
       }
     })
 
-    // Double-tap (mobile)
     canvas.on('mouse:down', function(e) {
       const now = Date.now()
       if (now - lastTapRef.current < 300 && e.target === lastTapTargetRef.current) {
@@ -114,7 +156,6 @@ function App() {
       lastTapTargetRef.current = e.target
     })
 
-    // Pinch-to-resize for selected objects
     let initialDistance = 0
     let initialScale = 1
     let activeObj = null
@@ -175,14 +216,17 @@ function App() {
   useEffect(() => {
     const canvas = fabricRef.current
     if (!canvas) return
+    
+    const frameData = FRAMES.find(f => f.id === selectedFrame)
+    loadFrame(canvas, frameData?.file || null)
+  }, [selectedFrame])
+
+  useEffect(() => {
+    const canvas = fabricRef.current
+    if (!canvas) return
     const textObj = canvas.getObjects().find(obj => obj.type === 'i-text')
     if (textObj) {
-      textObj.set({
-        text: text,
-        fontFamily: font,
-        fontSize: fontSize * canvas.scale,
-        fill: textColor,
-      })
+      textObj.set({ text, fontFamily: font, fontSize: fontSize * canvas.scale, fill: textColor })
       canvas.renderAll()
     }
   }, [text, font, fontSize, textColor])
@@ -218,6 +262,9 @@ function App() {
         canvas.add(img)
         centerObjectOnCanvas(canvas, img)
         canvas.sendToBack(img)
+        if (frameRef.current) {
+          canvas.bringToFront(frameRef.current)
+        }
         canvas.renderAll()
       })
     }
@@ -255,6 +302,9 @@ function App() {
     const textObj = canvas.getObjects().find(obj => obj.type === 'i-text')
     if (textObj) {
       canvas.bringToFront(textObj)
+      if (frameRef.current) {
+        canvas.bringToFront(frameRef.current)
+      }
       canvas.renderAll()
     }
   }
@@ -276,6 +326,9 @@ function App() {
     const canvas = fabricRef.current
     if (canvas && bgImageRef.current) {
       fitImageToCanvas(canvas, bgImageRef.current)
+      if (frameRef.current) {
+        canvas.bringToFront(frameRef.current)
+      }
     }
   }
 
@@ -362,6 +415,21 @@ function App() {
         </div>
 
         <aside className="panel right-panel">
+          <section className="control-group">
+            <label className="label">Frame</label>
+            <div className="frame-list">
+              {FRAMES.map((f) => (
+                <button
+                  key={f.id}
+                  className={`frame-btn ${selectedFrame === f.id ? 'active' : ''}`}
+                  onClick={() => setSelectedFrame(f.id)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </section>
+
           <section className="control-group">
             <label className="label">Background image</label>
             <input
