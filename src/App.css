@@ -1,0 +1,303 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f5f5;
+  color: #1a1a1a;
+  min-height: 100vh;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.header h1 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.export-btn {
+  background: #185FA5;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.export-btn:hover {
+  background: #0c447c;
+}
+
+/* Main Layout */
+.main {
+  display: grid;
+  grid-template-columns: 240px 1fr 240px;
+  gap: 20px;
+  padding: 20px;
+  flex: 1;
+}
+
+/* Panels */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.control-group {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e5e5e5;
+}
+
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+/* Text Input */
+.text-input {
+  width: 100%;
+  height: 80px;
+  padding: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 18px;
+  font-family: 'Amiri', serif;
+  resize: none;
+  direction: rtl;
+  text-align: right;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: #185FA5;
+}
+
+/* Font List */
+.font-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.font-btn {
+  padding: 10px 12px;
+  background: #f5f5f5;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 16px;
+  text-align: right;
+  direction: rtl;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.font-btn:hover {
+  background: #eee;
+}
+
+.font-btn.active {
+  background: #e6f1fb;
+  border-color: #185FA5;
+  color: #185FA5;
+}
+
+/* Color Grid */
+.color-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.color-btn.square {
+  border-radius: 6px;
+}
+
+.color-btn:hover {
+  transform: scale(1.1);
+}
+
+.color-btn.active {
+  border-color: #185FA5;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #185FA5;
+}
+
+/* For white color button */
+.color-btn[style*="ffffff"] {
+  border: 1px solid #ddd;
+}
+
+/* Slider */
+.slider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #e5e5e5;
+  border-radius: 3px;
+  outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #185FA5;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #185FA5;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+/* Canvas Container */
+.canvas-container {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e5e5;
+  overflow: hidden;
+}
+
+.canvas-toolbar {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.size-select {
+  padding: 8px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.canvas-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #fafafa;
+}
+
+.canvas-wrapper canvas {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+/* Upload Button */
+.upload-btn {
+  width: 100%;
+  padding: 14px;
+  background: #f5f5f5;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-btn:hover {
+  background: #eee;
+  border-color: #999;
+}
+
+.clear-btn {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.clear-btn:hover {
+  background: #f5f5f5;
+}
+
+/* Guide Links */
+.guide-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guide-links a {
+  padding: 10px 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  color: #185FA5;
+  text-decoration: none;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.guide-links a:hover {
+  background: #e6f1fb;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .main {
+    grid-template-columns: 1fr;
+  }
+  
+  .panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .control-group {
+    flex: 1;
+    min-width: 200px;
+  }
+}
