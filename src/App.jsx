@@ -9,23 +9,35 @@ const CANVAS_SIZES = {
   xPost: { width: 1200, height: 675, label: 'X Post (1200×675)' },
 }
 
-// Available fonts
+// Available fonts (8 Arabic calligraphy fonts)
 const FONTS = [
   { name: 'Amiri', label: 'Amiri' },
   { name: 'Noto Naskh Arabic', label: 'Noto Naskh' },
   { name: 'Scheherazade New', label: 'Scheherazade' },
+  { name: 'Aref Ruqaa', label: 'Aref Ruqaa' },
+  { name: 'Lateef', label: 'Lateef' },
+  { name: 'Reem Kufi', label: 'Reem Kufi' },
+  { name: 'Marhey', label: 'Marhey' },
+  { name: 'Tajawal', label: 'Tajawal' },
 ]
 
-// Color palette
-const COLORS = [
+// Color palette for text
+const TEXT_COLORS = [
   '#1a1a1a', '#ffffff', '#C9A227', '#0F6E56', 
   '#185FA5', '#854F0B', '#712B13', '#3C3489'
+]
+
+// Background colors (transparent first)
+const BG_COLORS = [
+  'transparent', '#ffffff', '#1a1a1a', '#0F6E56', 
+  '#185FA5', '#854F0B', '#FAEEDA'
 ]
 
 function App() {
   const canvasRef = useRef(null)
   const fabricRef = useRef(null)
   const fileInputRef = useRef(null)
+  const bgImageRef = useRef(null)
   
   const [text, setText] = useState('بِسْمِ اللَّهِ')
   const [font, setFont] = useState('Amiri')
@@ -42,7 +54,8 @@ function App() {
     const canvas = new fabric.Canvas(canvasRef.current, {
       width: size.width * scale,
       height: size.height * scale,
-      backgroundColor: bgColor,
+      backgroundColor: bgColor === 'transparent' ? null : bgColor,
+      preserveObjectStacking: true,
     })
     
     fabricRef.current = canvas
@@ -67,6 +80,18 @@ function App() {
     canvas.setActiveObject(textObj)
     canvas.renderAll()
 
+    // Enable touch gestures for mobile
+    canvas.on('touch:gesture', function(e) {
+      if (e.e.touches && e.e.touches.length === 2) {
+        const point = new fabric.Point(e.self.x, e.self.y)
+        if (e.self.state === 'start') {
+          canvas.zoomStartScale = canvas.getZoom()
+        }
+        let zoom = canvas.zoomStartScale * e.self.scale
+        canvas.zoomToPoint(point, zoom)
+      }
+    })
+
     return () => {
       canvas.dispose()
     }
@@ -77,9 +102,10 @@ function App() {
     const canvas = fabricRef.current
     if (!canvas) return
     
-    const activeObj = canvas.getActiveObject()
-    if (activeObj && activeObj.type === 'i-text') {
-      activeObj.set({
+    const objects = canvas.getObjects()
+    const textObj = objects.find(obj => obj.type === 'i-text')
+    if (textObj) {
+      textObj.set({
         text: text,
         fontFamily: font,
         fontSize: fontSize * canvas.scale,
@@ -93,7 +119,12 @@ function App() {
   useEffect(() => {
     const canvas = fabricRef.current
     if (!canvas) return
-    canvas.setBackgroundColor(bgColor, () => canvas.renderAll())
+    
+    if (bgColor === 'transparent') {
+      canvas.setBackgroundColor(null, () => canvas.renderAll())
+    } else {
+      canvas.setBackgroundColor(bgColor, () => canvas.renderAll())
+    }
   }, [bgColor])
 
   // Handle background image upload
@@ -104,8 +135,14 @@ function App() {
     const reader = new FileReader()
     reader.onload = (event) => {
       const canvas = fabricRef.current
+      
+      // Remove existing background image if any
+      if (bgImageRef.current) {
+        canvas.remove(bgImageRef.current)
+      }
+      
       fabric.Image.fromURL(event.target.result, (img) => {
-        // Scale image to cover canvas
+        // Scale image to cover canvas initially
         const scaleX = canvas.width / img.width
         const scaleY = canvas.height / img.height
         const scale = Math.max(scaleX, scaleY)
@@ -117,12 +154,26 @@ function App() {
           originY: 'center',
           left: canvas.width / 2,
           top: canvas.height / 2,
+          // Make it selectable and resizable
+          selectable: true,
+          hasControls: true,
+          hasBorders: true,
+          lockUniScaling: false,
         })
         
-        canvas.setBackgroundImage(img, () => canvas.renderAll())
+        // Store reference
+        bgImageRef.current = img
+        
+        // Add to canvas at the back
+        canvas.add(img)
+        canvas.sendToBack(img)
+        canvas.renderAll()
       })
     }
     reader.readAsDataURL(file)
+    
+    // Reset file input so same file can be re-selected
+    e.target.value = ''
   }
 
   // Export canvas as PNG
@@ -145,12 +196,28 @@ function App() {
   }
 
   // Clear background image
-  const clearBackground = () => {
+  const clearBgImage = () => {
     const canvas = fabricRef.current
     if (!canvas) return
-    canvas.setBackgroundImage(null, () => {
-      canvas.setBackgroundColor(bgColor, () => canvas.renderAll())
-    })
+    
+    if (bgImageRef.current) {
+      canvas.remove(bgImageRef.current)
+      bgImageRef.current = null
+      canvas.renderAll()
+    }
+  }
+
+  // Bring text to front (in case it goes behind image)
+  const bringTextToFront = () => {
+    const canvas = fabricRef.current
+    if (!canvas) return
+    
+    const objects = canvas.getObjects()
+    const textObj = objects.find(obj => obj.type === 'i-text')
+    if (textObj) {
+      canvas.bringToFront(textObj)
+      canvas.renderAll()
+    }
   }
 
   return (
@@ -198,10 +265,10 @@ function App() {
           <section className="control-group">
             <label className="label">Text color</label>
             <div className="color-grid">
-              {COLORS.map((color) => (
+              {TEXT_COLORS.map((color) => (
                 <button
                   key={color}
-                  className={`color-btn ${textColor === color ? 'active' : ''}`}
+                  className={`color-btn ${textColor === color ? 'active' : ''} ${color === '#ffffff' ? 'white-btn' : ''}`}
                   style={{ backgroundColor: color }}
                   onClick={() => setTextColor(color)}
                 />
@@ -235,17 +302,20 @@ function App() {
                 <option key={key} value={key}>{val.label}</option>
               ))}
             </select>
+            <button className="toolbar-btn" onClick={bringTextToFront}>
+              Text to front
+            </button>
           </div>
           <div className="canvas-wrapper">
             <canvas ref={canvasRef} />
           </div>
         </div>
 
-        {/* Right Panel - Background & Export */}
+        {/* Right Panel - Background */}
         <aside className="panel right-panel">
-          {/* Background */}
+          {/* Background Image */}
           <section className="control-group">
-            <label className="label">Background</label>
+            <label className="label">Background image</label>
             <input
               type="file"
               accept="image/*"
@@ -259,37 +329,27 @@ function App() {
             >
               📷 Import image
             </button>
-            <button className="clear-btn" onClick={clearBackground}>
+            <button className="clear-btn" onClick={clearBgImage}>
               Clear image
             </button>
-            <div className="color-grid" style={{ marginTop: '12px' }}>
-              {['#ffffff', '#1a1a1a', '#0F6E56', '#185FA5', '#854F0B', '#FAEEDA'].map((color) => (
-                <button
-                  key={color}
-                  className={`color-btn square ${bgColor === color ? 'active' : ''}`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => {
-                    setBgColor(color)
-                    clearBackground()
-                  }}
-                />
-              ))}
-            </div>
+            <p className="hint">Tap image to select, then pinch to resize</p>
           </section>
 
-          {/* Ad Platform Guides */}
+          {/* Background Color */}
           <section className="control-group">
-            <label className="label">Ad platform guides</label>
-            <div className="guide-links">
-              <a href="https://business.x.com/en/help/campaign-setup" target="_blank" rel="noopener">
-                𝕏 X Ads →
-              </a>
-              <a href="https://www.facebook.com/business/help/1438417719786914" target="_blank" rel="noopener">
-                Meta Ads →
-              </a>
-              <a href="https://support.google.com/youtube/answer/2375497" target="_blank" rel="noopener">
-                YouTube Ads →
-              </a>
+            <label className="label">Background color</label>
+            <div className="color-grid">
+              {BG_COLORS.map((color) => (
+                <button
+                  key={color}
+                  className={`color-btn square ${bgColor === color ? 'active' : ''} ${color === 'transparent' ? 'transparent-btn' : ''} ${color === '#ffffff' ? 'white-btn' : ''}`}
+                  style={{ backgroundColor: color === 'transparent' ? 'transparent' : color }}
+                  onClick={() => setBgColor(color)}
+                  title={color === 'transparent' ? 'Transparent' : color}
+                >
+                  {color === 'transparent' && <span className="transparent-icon">◇</span>}
+                </button>
+              ))}
             </div>
           </section>
         </aside>
