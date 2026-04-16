@@ -19,7 +19,6 @@ const FONTS = [
   { name: 'Tajawal', label: 'Tajawal' },
 ]
 
-// Frame styles - code will auto-append size suffix
 const FRAMES = [
   { id: 'none', label: 'No frame' },
   { id: 'frame-01', label: 'Frame 1' },
@@ -34,7 +33,6 @@ const FRAMES = [
   { id: 'frame-10', label: 'Frame 10' },
 ]
 
-// Map canvas size keys to frame file suffixes
 const SIZE_TO_SUFFIX = {
   square: 'square',
   landscape: 'landscape',
@@ -62,7 +60,6 @@ function App() {
   const [bgColor, setBgColor] = useState('#ffffff')
   const [selectedFrame, setSelectedFrame] = useState('none')
 
-  // Build frame file path based on frame ID and canvas size
   const getFramePath = (frameId, sizeKey) => {
     if (frameId === 'none') return null
     const suffix = SIZE_TO_SUFFIX[sizeKey]
@@ -117,13 +114,10 @@ function App() {
         return
       }
       
-      // Frame should exactly match canvas size (already pre-sized)
-      const scaleX = canvas.width / img.width
-      const scaleY = canvas.height / img.height
-      
+      // Scale frame to exactly fill the canvas
       img.set({
-        scaleX: scaleX,
-        scaleY: scaleY,
+        scaleX: canvas.width / img.width,
+        scaleY: canvas.height / img.height,
         left: 0,
         top: 0,
         selectable: false,
@@ -137,6 +131,7 @@ function App() {
     }, { crossOrigin: 'anonymous' })
   }
 
+  // Main canvas setup - runs when canvasSize OR selectedFrame changes
   useEffect(() => {
     const size = CANVAS_SIZES[canvasSize]
     const scale = Math.min(500 / size.width, 400 / size.height)
@@ -164,7 +159,7 @@ function App() {
     canvas.setActiveObject(textObj)
     canvas.renderAll()
 
-    // Load frame for current canvas size
+    // Load correct frame variant for this canvas size
     const framePath = getFramePath(selectedFrame, canvasSize)
     if (framePath) {
       loadFrame(canvas, framePath)
@@ -242,16 +237,7 @@ function App() {
       }
       canvas.dispose()
     }
-  }, [canvasSize])
-
-  // Reload frame when frame selection changes
-  useEffect(() => {
-    const canvas = fabricRef.current
-    if (!canvas) return
-    
-    const framePath = getFramePath(selectedFrame, canvasSize)
-    loadFrame(canvas, framePath)
-  }, [selectedFrame])
+  }, [canvasSize, selectedFrame])
 
   useEffect(() => {
     const canvas = fabricRef.current
