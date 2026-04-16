@@ -19,10 +19,28 @@ const FONTS = [
   { name: 'Tajawal', label: 'Tajawal' },
 ]
 
+// Frame styles - code will auto-append size suffix
 const FRAMES = [
-  { id: 'none', label: 'No frame', file: null },
-  { id: 'frame-01', label: 'Frame 1', file: '/frames/frame-01.png' },
+  { id: 'none', label: 'No frame' },
+  { id: 'frame-01', label: 'Frame 1' },
+  { id: 'frame-02', label: 'Frame 2' },
+  { id: 'frame-03', label: 'Frame 3' },
+  { id: 'frame-04', label: 'Frame 4' },
+  { id: 'frame-05', label: 'Frame 5' },
+  { id: 'frame-06', label: 'Frame 6' },
+  { id: 'frame-07', label: 'Frame 7' },
+  { id: 'frame-08', label: 'Frame 8' },
+  { id: 'frame-09', label: 'Frame 9' },
+  { id: 'frame-10', label: 'Frame 10' },
 ]
+
+// Map canvas size keys to frame file suffixes
+const SIZE_TO_SUFFIX = {
+  square: 'square',
+  landscape: 'landscape',
+  story: 'story',
+  xPost: 'xpost',
+}
 
 const TEXT_COLORS = ['#1a1a1a', '#ffffff', '#C9A227', '#0F6E56', '#185FA5', '#854F0B', '#712B13', '#3C3489']
 const BG_COLORS = ['transparent', '#ffffff', '#1a1a1a', '#0F6E56', '#185FA5', '#854F0B', '#FAEEDA']
@@ -43,6 +61,13 @@ function App() {
   const [canvasSize, setCanvasSize] = useState('square')
   const [bgColor, setBgColor] = useState('#ffffff')
   const [selectedFrame, setSelectedFrame] = useState('none')
+
+  // Build frame file path based on frame ID and canvas size
+  const getFramePath = (frameId, sizeKey) => {
+    if (frameId === 'none') return null
+    const suffix = SIZE_TO_SUFFIX[sizeKey]
+    return `/frames/${frameId}-${suffix}.png`
+  }
 
   const centerObjectOnCanvas = (canvas, obj) => {
     if (!canvas || !obj) return
@@ -75,27 +100,32 @@ function App() {
     canvas.renderAll()
   }
 
-  const loadFrame = (canvas, frameFile) => {
+  const loadFrame = (canvas, framePath) => {
     if (frameRef.current) {
       canvas.remove(frameRef.current)
       frameRef.current = null
     }
     
-    if (!frameFile) {
+    if (!framePath) {
       canvas.renderAll()
       return
     }
     
-    fabric.Image.fromURL(frameFile, (img) => {
+    fabric.Image.fromURL(framePath, (img) => {
+      if (!img || !img.width) {
+        console.warn('Failed to load frame:', framePath)
+        return
+      }
+      
+      // Frame should exactly match canvas size (already pre-sized)
       const scaleX = canvas.width / img.width
       const scaleY = canvas.height / img.height
-      const scale = Math.max(scaleX, scaleY)
       
       img.set({
-        scaleX: scale,
-        scaleY: scale,
-        left: (canvas.width - img.width * scale) / 2,
-        top: (canvas.height - img.height * scale) / 2,
+        scaleX: scaleX,
+        scaleY: scaleY,
+        left: 0,
+        top: 0,
         selectable: false,
         evented: false,
       })
@@ -134,9 +164,10 @@ function App() {
     canvas.setActiveObject(textObj)
     canvas.renderAll()
 
-    const frameData = FRAMES.find(f => f.id === selectedFrame)
-    if (frameData?.file) {
-      loadFrame(canvas, frameData.file)
+    // Load frame for current canvas size
+    const framePath = getFramePath(selectedFrame, canvasSize)
+    if (framePath) {
+      loadFrame(canvas, framePath)
     }
 
     canvas.on('mouse:dblclick', function(e) {
@@ -213,12 +244,13 @@ function App() {
     }
   }, [canvasSize])
 
+  // Reload frame when frame selection changes
   useEffect(() => {
     const canvas = fabricRef.current
     if (!canvas) return
     
-    const frameData = FRAMES.find(f => f.id === selectedFrame)
-    loadFrame(canvas, frameData?.file || null)
+    const framePath = getFramePath(selectedFrame, canvasSize)
+    loadFrame(canvas, framePath)
   }, [selectedFrame])
 
   useEffect(() => {
