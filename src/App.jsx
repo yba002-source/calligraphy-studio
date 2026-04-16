@@ -220,6 +220,32 @@ function App() {
     }
   }
 
+  // Center the selected object (or text if nothing selected)
+  const centerSelection = () => {
+    const canvas = fabricRef.current
+    if (!canvas) return
+    
+    let obj = canvas.getActiveObject()
+    
+    // If nothing selected, center the text
+    if (!obj) {
+      const objects = canvas.getObjects()
+      obj = objects.find(o => o.type === 'i-text')
+    }
+    
+    if (obj) {
+      // Set origin to center for proper centering
+      obj.set({
+        originX: 'center',
+        originY: 'center',
+        left: canvas.width / 2,
+        top: canvas.height / 2,
+      })
+      obj.setCoords()
+      canvas.renderAll()
+    }
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -302,6 +328,9 @@ function App() {
                 <option key={key} value={key}>{val.label}</option>
               ))}
             </select>
+            <button className="toolbar-btn" onClick={centerSelection}>
+              Center
+            </button>
             <button className="toolbar-btn" onClick={bringTextToFront}>
               Text to front
             </button>
