@@ -9,6 +9,7 @@ const CANVAS_SIZES = {
 }
 
 const FONTS = [
+  // Original fonts
   { name: 'Amiri', label: 'Amiri' },
   { name: 'Noto Naskh Arabic', label: 'Noto Naskh' },
   { name: 'Scheherazade New', label: 'Scheherazade' },
@@ -17,6 +18,19 @@ const FONTS = [
   { name: 'Reem Kufi', label: 'Reem Kufi' },
   { name: 'Marhey', label: 'Marhey' },
   { name: 'Tajawal', label: 'Tajawal' },
+  // New fonts
+  { name: 'Cairo', label: 'Cairo' },
+  { name: 'El Messiri', label: 'El Messiri' },
+  { name: 'Mirza', label: 'Mirza' },
+  { name: 'Rakkas', label: 'Rakkas' },
+  { name: 'Lalezar', label: 'Lalezar' },
+  { name: 'Katibeh', label: 'Katibeh' },
+  { name: 'Harmattan', label: 'Harmattan' },
+  { name: 'Noto Kufi Arabic', label: 'Noto Kufi' },
+  { name: 'Almarai', label: 'Almarai' },
+  { name: 'Changa', label: 'Changa' },
+  // Harakat-optimized
+  { name: 'Markazi Text', label: 'Markazi' },
 ]
 
 const FRAMES = [
