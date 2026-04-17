@@ -17,6 +17,20 @@ body {
   flex-direction: column;
 }
 
+/* RTL Support */
+.app.rtl {
+  font-family: 'Tajawal', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.app.rtl .frame-btn {
+  text-align: right;
+}
+
+.app.ltr .font-btn {
+  text-align: left;
+  direction: ltr;
+}
+
 /* Header */
 .header {
   display: flex;
@@ -30,6 +44,29 @@ body {
 .header h1 {
   font-size: 18px;
   font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.lang-btn {
+  background: #f5f5f5;
+  color: #1a1a1a;
+  border: 1px solid #e5e5e5;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lang-btn:hover {
+  background: #eee;
+  border-color: #ccc;
 }
 
 .export-btn {
@@ -450,5 +487,19 @@ body {
   .color-btn {
     width: 24px;
     height: 24px;
+  }
+  
+  .header h1 {
+    font-size: 16px;
+  }
+  
+  .lang-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .export-btn {
+    padding: 8px 14px;
+    font-size: 12px;
   }
 }
