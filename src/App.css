@@ -164,13 +164,13 @@ body {
 /* Color Grid */
 .color-grid {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .color-btn {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
@@ -216,6 +216,41 @@ body {
   transform: translate(-50%, -50%);
   font-size: 14px;
   color: #666;
+}
+
+/* Color Picker */
+.color-picker-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.color-picker-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.color-picker-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: #666;
+  border: 2px dashed #ccc;
+  background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%);
+}
+
+.color-picker-btn:hover {
+  border-color: #999;
+}
+
+.color-picker-btn.active {
+  border-style: solid;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 /* Slider */
@@ -410,5 +445,10 @@ body {
   .toolbar-btn {
     padding: 6px 10px;
     font-size: 12px;
+  }
+  
+  .color-btn {
+    width: 24px;
+    height: 24px;
   }
 }
