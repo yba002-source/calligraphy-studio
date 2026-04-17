@@ -71,6 +71,7 @@ function App() {
   const [canvasSize, setCanvasSize] = useState('square')
   const [bgColor, setBgColor] = useState('#ffffff')
   const [selectedFrame, setSelectedFrame] = useState('none')
+  const [bgEditable, setBgEditable] = useState(false)
 
   const getFramePath = (frameId, sizeKey) => {
     if (frameId === 'none') return null
@@ -145,7 +146,7 @@ function App() {
     }, { crossOrigin: 'anonymous' })
   }
 
-  const loadBgImage = (canvas, dataUrl, selectAfter = false) => {
+  const loadBgImage = (canvas, dataUrl, editable = false) => {
     if (!dataUrl) return
     
     fabric.Image.fromURL(dataUrl, (img) => {
@@ -155,9 +156,10 @@ function App() {
       img.set({
         scaleX: scale,
         scaleY: scale,
-        selectable: true,
-        hasControls: true,
-        hasBorders: true,
+        selectable: editable,
+        hasControls: editable,
+        hasBorders: editable,
+        evented: editable,
         lockUniScaling: false,
       })
       bgImageRef.current = img
@@ -167,10 +169,33 @@ function App() {
       if (frameRef.current) {
         canvas.bringToFront(frameRef.current)
       }
-      // Don't auto-select the image - deselect everything
       canvas.discardActiveObject()
       canvas.renderAll()
     })
+  }
+
+  // Toggle background editability
+  const toggleBgEditable = () => {
+    const canvas = fabricRef.current
+    const img = bgImageRef.current
+    if (!canvas || !img) return
+    
+    const newEditable = !bgEditable
+    setBgEditable(newEditable)
+    
+    img.set({
+      selectable: newEditable,
+      hasControls: newEditable,
+      hasBorders: newEditable,
+      evented: newEditable,
+    })
+    
+    if (newEditable) {
+      canvas.setActiveObject(img)
+    } else {
+      canvas.discardActiveObject()
+    }
+    canvas.renderAll()
   }
 
   useEffect(() => {
@@ -199,9 +224,10 @@ function App() {
     centerObjectOnCanvas(canvas, textObj)
     canvas.setActiveObject(textObj)
 
-    // Restore background image if exists
+    // Restore background image if exists (not editable by default)
     if (bgImageDataRef.current) {
       loadBgImage(canvas, bgImageDataRef.current, false)
+      setBgEditable(false)
     }
 
     // Load frame
@@ -212,9 +238,8 @@ function App() {
 
     canvas.renderAll()
 
-    // Click on empty area deselects
+    // Double-tap detection
     canvas.on('mouse:down', function(e) {
-      // Double-tap detection for fitting background
       const now = Date.now()
       if (now - lastTapRef.current < 300 && e.target === lastTapTargetRef.current) {
         if (e.target && e.target.type === 'image' && e.target === bgImageRef.current) {
@@ -297,13 +322,12 @@ function App() {
     loadFrame(canvas, framePath)
   }, [selectedFrame])
 
-  // Handle text property changes - FIX: force immediate font update
+  // Handle text property changes
   useEffect(() => {
     const canvas = fabricRef.current
     if (!canvas) return
     const textObj = canvas.getObjects().find(obj => obj.type === 'i-text')
     if (textObj) {
-      // Exit editing mode to apply font change
       if (textObj.isEditing) {
         textObj.exitEditing()
       }
@@ -313,9 +337,10 @@ function App() {
         fontSize: fontSize * canvas.scale, 
         fill: textColor 
       })
-      // Force dirty flag to ensure re-render
+      // Force recalculate dimensions and re-render
+      textObj.initDimensions()
       textObj.dirty = true
-      canvas.requestRenderAll()
+      canvas.renderAll()
     }
   }, [text, font, fontSize, textColor])
 
@@ -336,6 +361,7 @@ function App() {
       }
       bgImageDataRef.current = event.target.result
       loadBgImage(canvas, event.target.result, false)
+      setBgEditable(false)
     }
     reader.readAsDataURL(file)
     e.target.value = ''
@@ -362,6 +388,7 @@ function App() {
       canvas.remove(bgImageRef.current)
       bgImageRef.current = null
       bgImageDataRef.current = null
+      setBgEditable(false)
       canvas.renderAll()
     }
   }
@@ -392,11 +419,11 @@ function App() {
     }
   }
 
-  // FIX: Fit to canvas works on background image (selected or not)
   const fitBgToCanvas = () => {
     const canvas = fabricRef.current
-    if (!canvas || !bgImageRef.current) return
-    fitImageToCanvas(canvas, bgImageRef.current)
+    const img = bgImageRef.current
+    if (!canvas || !img) return
+    fitImageToCanvas(canvas, img)
   }
 
   return (
@@ -512,6 +539,14 @@ function App() {
             >
               Import image
             </button>
+            {bgImageRef.current && (
+              <button 
+                className={`clear-btn ${bgEditable ? 'active-toggle' : ''}`} 
+                onClick={toggleBgEditable}
+              >
+                {bgEditable ? '✓ Editing background' : 'Edit background'}
+              </button>
+            )}
             <button className="clear-btn" onClick={fitBgToCanvas}>Fit to canvas</button>
             <button className="clear-btn" onClick={clearBgImage}>Clear image</button>
             <p className="hint">Double-tap image to fit. Pinch to resize.</p>
