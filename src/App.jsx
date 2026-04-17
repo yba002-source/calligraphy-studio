@@ -51,13 +51,29 @@ const SIZE_TO_SUFFIX = {
   xPost: 'xpost',
 }
 
-const TEXT_COLORS = ['#1a1a1a', '#ffffff', '#C9A227', '#0F6E56', '#185FA5', '#854F0B', '#712B13', '#3C3489']
-const BG_COLORS = ['transparent', '#ffffff', '#1a1a1a', '#0F6E56', '#185FA5', '#854F0B', '#FAEEDA']
+// Expanded color palette
+const TEXT_COLORS = [
+  // Row 1: Basics
+  '#000000', '#1a1a1a', '#4a4a4a', '#808080', '#b0b0b0', '#ffffff',
+  // Row 2: Golds & Browns (Islamic traditional)
+  '#C9A227', '#D4AF37', '#996515', '#854F0B', '#712B13', '#5C4033',
+  // Row 3: Greens (Islamic traditional)
+  '#0F6E56', '#1B5E20', '#2E7D32', '#388E3C', '#4CAF50', '#81C784',
+  // Row 4: Blues
+  '#185FA5', '#1565C0', '#1976D2', '#2196F3', '#42A5F5', '#0D47A1',
+  // Row 5: Reds & Maroons
+  '#8B0000', '#B71C1C', '#C62828', '#D32F2F', '#E53935', '#EF5350',
+  // Row 6: Purples & Special
+  '#3C3489', '#4A148C', '#6A1B9A', '#7B1FA2', '#8E24AA', '#9C27B0',
+]
+
+const BG_COLORS = ['transparent', '#ffffff', '#1a1a1a', '#0F6E56', '#185FA5', '#854F0B', '#FAEEDA', '#F5F5DC', '#1B5E20', '#8B0000']
 
 function App() {
   const canvasRef = useRef(null)
   const fabricRef = useRef(null)
   const fileInputRef = useRef(null)
+  const colorInputRef = useRef(null)
   const bgImageRef = useRef(null)
   const bgImageDataRef = useRef(null)
   const frameRef = useRef(null)
@@ -174,7 +190,6 @@ function App() {
     })
   }
 
-  // Toggle background editability
   const toggleBgEditable = () => {
     const canvas = fabricRef.current
     const img = bgImageRef.current
@@ -224,13 +239,11 @@ function App() {
     centerObjectOnCanvas(canvas, textObj)
     canvas.setActiveObject(textObj)
 
-    // Restore background image if exists (not editable by default)
     if (bgImageDataRef.current) {
       loadBgImage(canvas, bgImageDataRef.current, false)
       setBgEditable(false)
     }
 
-    // Load frame
     const framePath = getFramePath(selectedFrame, canvasSize)
     if (framePath) {
       loadFrame(canvas, framePath)
@@ -238,7 +251,6 @@ function App() {
 
     canvas.renderAll()
 
-    // Double-tap detection
     canvas.on('mouse:down', function(e) {
       const now = Date.now()
       if (now - lastTapRef.current < 300 && e.target === lastTapTargetRef.current) {
@@ -313,7 +325,6 @@ function App() {
     }
   }, [canvasSize])
 
-  // Handle frame change
   useEffect(() => {
     const canvas = fabricRef.current
     if (!canvas) return
@@ -322,7 +333,6 @@ function App() {
     loadFrame(canvas, framePath)
   }, [selectedFrame])
 
-  // Handle text property changes
   useEffect(() => {
     const canvas = fabricRef.current
     if (!canvas) return
@@ -337,7 +347,6 @@ function App() {
         fontSize: fontSize * canvas.scale, 
         fill: textColor 
       })
-      // Force recalculate dimensions and re-render
       textObj.initDimensions()
       textObj.dirty = true
       canvas.renderAll()
@@ -426,6 +435,10 @@ function App() {
     fitImageToCanvas(canvas, img)
   }
 
+  const handleCustomColor = (e) => {
+    setTextColor(e.target.value)
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -471,8 +484,27 @@ function App() {
                   className={`color-btn ${textColor === color ? 'active' : ''} ${color === '#ffffff' ? 'white-btn' : ''}`}
                   style={{ backgroundColor: color }}
                   onClick={() => setTextColor(color)}
+                  title={color}
                 />
               ))}
+              {/* Color picker button */}
+              <div className="color-picker-wrapper">
+                <input
+                  type="color"
+                  ref={colorInputRef}
+                  value={textColor}
+                  onChange={handleCustomColor}
+                  className="color-picker-input"
+                />
+                <button
+                  className={`color-btn color-picker-btn ${!TEXT_COLORS.includes(textColor) ? 'active' : ''}`}
+                  onClick={() => colorInputRef.current?.click()}
+                  style={{ backgroundColor: !TEXT_COLORS.includes(textColor) ? textColor : 'transparent' }}
+                  title="Custom color"
+                >
+                  +
+                </button>
+              </div>
             </div>
           </section>
 
