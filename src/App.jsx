@@ -1,11 +1,68 @@
 import { useState, useRef, useEffect } from 'react'
 import { fabric } from 'fabric'
 
+const TRANSLATIONS = {
+  en: {
+    appTitle: 'Calligraphy Studio',
+    exportPng: 'Export PNG',
+    yourText: 'Your text',
+    textPlaceholder: 'Type here...',
+    font: 'Font',
+    textColor: 'Text color',
+    size: 'Size',
+    frame: 'Frame',
+    noFrame: 'No frame',
+    backgroundImage: 'Background image',
+    importImage: 'Import image',
+    editBackground: 'Edit background',
+    editingBackground: '✓ Editing background',
+    fitToCanvas: 'Fit to canvas',
+    clearImage: 'Clear image',
+    hint: 'Double-tap image to fit. Pinch to resize.',
+    backgroundColor: 'Background color',
+    center: 'Center',
+    textToFront: 'Text to front',
+    customColor: 'Custom color',
+    transparent: 'Transparent',
+    square: 'Square (1080×1080)',
+    landscape: 'Landscape (1920×1080)',
+    story: 'Story (1080×1920)',
+    xPost: 'X Post (1200×675)',
+  },
+  ar: {
+    appTitle: 'استوديو الخط',
+    exportPng: 'تصدير PNG',
+    yourText: 'النص',
+    textPlaceholder: 'اكتب هنا...',
+    font: 'الخط',
+    textColor: 'لون النص',
+    size: 'الحجم',
+    frame: 'الإطار',
+    noFrame: 'بدون إطار',
+    backgroundImage: 'صورة الخلفية',
+    importImage: 'استيراد صورة',
+    editBackground: 'تعديل الخلفية',
+    editingBackground: '✓ تعديل الخلفية',
+    fitToCanvas: 'ملء اللوحة',
+    clearImage: 'حذف الصورة',
+    hint: 'انقر مرتين للملء. اقرص للتكبير.',
+    backgroundColor: 'لون الخلفية',
+    center: 'توسيط',
+    textToFront: 'النص للأمام',
+    customColor: 'لون مخصص',
+    transparent: 'شفاف',
+    square: 'مربع (1080×1080)',
+    landscape: 'أفقي (1920×1080)',
+    story: 'ستوري (1080×1920)',
+    xPost: 'منشور X (1200×675)',
+  }
+}
+
 const CANVAS_SIZES = {
-  square: { width: 1080, height: 1080, label: 'Square (1080×1080)' },
-  landscape: { width: 1920, height: 1080, label: 'Landscape (1920×1080)' },
-  story: { width: 1080, height: 1920, label: 'Story (1080×1920)' },
-  xPost: { width: 1200, height: 675, label: 'X Post (1200×675)' },
+  square: { width: 1080, height: 1080 },
+  landscape: { width: 1920, height: 1080 },
+  story: { width: 1080, height: 1920 },
+  xPost: { width: 1200, height: 675 },
 }
 
 const FONTS = [
@@ -31,17 +88,17 @@ const FONTS = [
 ]
 
 const FRAMES = [
-  { id: 'none', label: 'No frame' },
-  { id: 'frame-01', label: 'Frame 1' },
-  { id: 'frame-02', label: 'Frame 2' },
-  { id: 'frame-03', label: 'Frame 3' },
-  { id: 'frame-04', label: 'Frame 4' },
-  { id: 'frame-05', label: 'Frame 5' },
-  { id: 'frame-06', label: 'Frame 6' },
-  { id: 'frame-07', label: 'Frame 7' },
-  { id: 'frame-08', label: 'Frame 8' },
-  { id: 'frame-09', label: 'Frame 9' },
-  { id: 'frame-10', label: 'Frame 10' },
+  { id: 'none' },
+  { id: 'frame-01', num: 1 },
+  { id: 'frame-02', num: 2 },
+  { id: 'frame-03', num: 3 },
+  { id: 'frame-04', num: 4 },
+  { id: 'frame-05', num: 5 },
+  { id: 'frame-06', num: 6 },
+  { id: 'frame-07', num: 7 },
+  { id: 'frame-08', num: 8 },
+  { id: 'frame-09', num: 9 },
+  { id: 'frame-10', num: 10 },
 ]
 
 const SIZE_TO_SUFFIX = {
@@ -51,19 +108,12 @@ const SIZE_TO_SUFFIX = {
   xPost: 'xpost',
 }
 
-// Expanded color palette
 const TEXT_COLORS = [
-  // Row 1: Basics
   '#000000', '#1a1a1a', '#4a4a4a', '#808080', '#b0b0b0', '#ffffff',
-  // Row 2: Golds & Browns (Islamic traditional)
   '#C9A227', '#D4AF37', '#996515', '#854F0B', '#712B13', '#5C4033',
-  // Row 3: Greens (Islamic traditional)
   '#0F6E56', '#1B5E20', '#2E7D32', '#388E3C', '#4CAF50', '#81C784',
-  // Row 4: Blues
   '#185FA5', '#1565C0', '#1976D2', '#2196F3', '#42A5F5', '#0D47A1',
-  // Row 5: Reds & Maroons
   '#8B0000', '#B71C1C', '#C62828', '#D32F2F', '#E53935', '#EF5350',
-  // Row 6: Purples & Special
   '#3C3489', '#4A148C', '#6A1B9A', '#7B1FA2', '#8E24AA', '#9C27B0',
 ]
 
@@ -80,6 +130,7 @@ function App() {
   const lastTapRef = useRef(0)
   const lastTapTargetRef = useRef(null)
   
+  const [lang, setLang] = useState('ar')
   const [text, setText] = useState('بِسْمِ اللَّهِ')
   const [font, setFont] = useState('Amiri')
   const [textColor, setTextColor] = useState('#1a1a1a')
@@ -88,6 +139,9 @@ function App() {
   const [bgColor, setBgColor] = useState('#ffffff')
   const [selectedFrame, setSelectedFrame] = useState('none')
   const [bgEditable, setBgEditable] = useState(false)
+
+  const t = TRANSLATIONS[lang]
+  const isRTL = lang === 'ar'
 
   const getFramePath = (frameId, sizeKey) => {
     if (frameId === 'none') return null
@@ -439,28 +493,42 @@ function App() {
     setTextColor(e.target.value)
   }
 
+  const toggleLanguage = () => {
+    setLang(lang === 'ar' ? 'en' : 'ar')
+  }
+
+  const getFrameLabel = (frame) => {
+    if (frame.id === 'none') return t.noFrame
+    return `${lang === 'ar' ? 'إطار' : 'Frame'} ${frame.num}`
+  }
+
   return (
-    <div className="app">
+    <div className={`app ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <header className="header">
-        <h1>Calligraphy Studio</h1>
-        <button className="export-btn" onClick={handleExport}>Export PNG</button>
+        <h1>{t.appTitle}</h1>
+        <div className="header-actions">
+          <button className="lang-btn" onClick={toggleLanguage}>
+            {lang === 'ar' ? 'EN' : 'عربي'}
+          </button>
+          <button className="export-btn" onClick={handleExport}>{t.exportPng}</button>
+        </div>
       </header>
 
       <main className="main">
         <aside className="panel left-panel">
           <section className="control-group">
-            <label className="label">Your text</label>
+            <label className="label">{t.yourText}</label>
             <textarea
               className="text-input"
               value={text}
               onChange={(e) => setText(e.target.value)}
               dir="rtl"
-              placeholder="اكتب هنا..."
+              placeholder={t.textPlaceholder}
             />
           </section>
 
           <section className="control-group">
-            <label className="label">Font</label>
+            <label className="label">{t.font}</label>
             <div className="font-list">
               {FONTS.map((f) => (
                 <button
@@ -476,7 +544,7 @@ function App() {
           </section>
 
           <section className="control-group">
-            <label className="label">Text color</label>
+            <label className="label">{t.textColor}</label>
             <div className="color-grid">
               {TEXT_COLORS.map((color) => (
                 <button
@@ -487,7 +555,6 @@ function App() {
                   title={color}
                 />
               ))}
-              {/* Color picker button */}
               <div className="color-picker-wrapper">
                 <input
                   type="color"
@@ -500,7 +567,7 @@ function App() {
                   className={`color-btn color-picker-btn ${!TEXT_COLORS.includes(textColor) ? 'active' : ''}`}
                   onClick={() => colorInputRef.current?.click()}
                   style={{ backgroundColor: !TEXT_COLORS.includes(textColor) ? textColor : 'transparent' }}
-                  title="Custom color"
+                  title={t.customColor}
                 >
                   +
                 </button>
@@ -509,7 +576,7 @@ function App() {
           </section>
 
           <section className="control-group">
-            <label className="label">Size: {fontSize}px</label>
+            <label className="label">{t.size}: {fontSize}px</label>
             <input
               type="range"
               min="24"
@@ -528,12 +595,13 @@ function App() {
               onChange={(e) => setCanvasSize(e.target.value)}
               className="size-select"
             >
-              {Object.entries(CANVAS_SIZES).map(([key, val]) => (
-                <option key={key} value={key}>{val.label}</option>
-              ))}
+              <option value="square">{t.square}</option>
+              <option value="landscape">{t.landscape}</option>
+              <option value="story">{t.story}</option>
+              <option value="xPost">{t.xPost}</option>
             </select>
-            <button className="toolbar-btn" onClick={centerSelection}>Center</button>
-            <button className="toolbar-btn" onClick={bringTextToFront}>Text to front</button>
+            <button className="toolbar-btn" onClick={centerSelection}>{t.center}</button>
+            <button className="toolbar-btn" onClick={bringTextToFront}>{t.textToFront}</button>
           </div>
           <div className="canvas-wrapper">
             <canvas ref={canvasRef} />
@@ -542,7 +610,7 @@ function App() {
 
         <aside className="panel right-panel">
           <section className="control-group">
-            <label className="label">Frame</label>
+            <label className="label">{t.frame}</label>
             <div className="frame-list">
               {FRAMES.map((f) => (
                 <button
@@ -550,14 +618,14 @@ function App() {
                   className={`frame-btn ${selectedFrame === f.id ? 'active' : ''}`}
                   onClick={() => setSelectedFrame(f.id)}
                 >
-                  {f.label}
+                  {getFrameLabel(f)}
                 </button>
               ))}
             </div>
           </section>
 
           <section className="control-group">
-            <label className="label">Background image</label>
+            <label className="label">{t.backgroundImage}</label>
             <input
               type="file"
               accept="image/*"
@@ -569,23 +637,23 @@ function App() {
               className="upload-btn"
               onClick={() => fileInputRef.current?.click()}
             >
-              Import image
+              {t.importImage}
             </button>
             {bgImageRef.current && (
               <button 
                 className={`clear-btn ${bgEditable ? 'active-toggle' : ''}`} 
                 onClick={toggleBgEditable}
               >
-                {bgEditable ? '✓ Editing background' : 'Edit background'}
+                {bgEditable ? t.editingBackground : t.editBackground}
               </button>
             )}
-            <button className="clear-btn" onClick={fitBgToCanvas}>Fit to canvas</button>
-            <button className="clear-btn" onClick={clearBgImage}>Clear image</button>
-            <p className="hint">Double-tap image to fit. Pinch to resize.</p>
+            <button className="clear-btn" onClick={fitBgToCanvas}>{t.fitToCanvas}</button>
+            <button className="clear-btn" onClick={clearBgImage}>{t.clearImage}</button>
+            <p className="hint">{t.hint}</p>
           </section>
 
           <section className="control-group">
-            <label className="label">Background color</label>
+            <label className="label">{t.backgroundColor}</label>
             <div className="color-grid">
               {BG_COLORS.map((color) => (
                 <button
@@ -593,7 +661,7 @@ function App() {
                   className={`color-btn square ${bgColor === color ? 'active' : ''} ${color === 'transparent' ? 'transparent-btn' : ''} ${color === '#ffffff' ? 'white-btn' : ''}`}
                   style={{ backgroundColor: color === 'transparent' ? 'transparent' : color }}
                   onClick={() => setBgColor(color)}
-                  title={color === 'transparent' ? 'Transparent' : color}
+                  title={color === 'transparent' ? t.transparent : color}
                 >
                   {color === 'transparent' && <span className="transparent-icon">◇</span>}
                 </button>
